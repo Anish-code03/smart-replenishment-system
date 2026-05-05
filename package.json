@@ -1,0 +1,12 @@
+{
+  "name": "smart-replenishment-agent",
+  "version": "1.0.0",
+  "description": "Swiggy Instamart Smart Replenishment Agent - Builders Club Demo",
+  "scripts": {
+    "demo": "npx tsx src/demo.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Replenishment Agent — Build Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0A0A08;
+    --paper: #F5F1EA;
+    --paper2: #EDE8DF;
+    --orange: #E85D04;
+    --orange-pale: #FFF0E6;
+    --orange-mid: #FF6B1A;
+    --green: #1A7A4A;
+    --green-pale: #E8F5EE;
+    --red: #C0392B;
+    --red-pale: #FDECEA;
+    --yellow: #D4860A;
+    --yellow-pale: #FEF9E7;
+    --rule: #C8C0B0;
+    --muted: #7A7468;
+    --code-bg: #1C1C18;
+    --code-text: #E8E4DA;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Fraunces', Georgia, serif;
+    line-height: 1.65;
+  }
+
+  /* ─── TOP STRIP ─── */
+  .topstrip {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .topstrip .verdict {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .verdict-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3DDB85;
+    display: inline-block;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    padding: 72px 48px 64px;
+    border-bottom: 2px solid var(--ink);
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .hero-eyebrow::before {
+    content: '▶';
+    font-size: 8px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(40px, 5vw, 72px);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+  }
+  h1 em {
+    color: var(--orange);
+    font-style: italic;
+  }
+
+  .hero-desc {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 580px;
+    line-height: 1.75;
+    font-weight: 300;
+    font-style: italic;
+  }
+
+  /* Verdict sidebar */
+  .verdict-card {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 4px;
+    padding: 32px 28px;
+    margin-top: 8px;
+  }
+  .verdict-card .vc-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 20px;
+  }
+  .verdict-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #2A2A2A;
+  }
+  .verdict-row:last-child { border-bottom: none; }
+  .verdict-row .vr-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #AAA;
+    letter-spacing: 0.05em;
+  }
+  .verdict-row .vr-score {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .score-green { color: #3DDB85; }
+  .score-yellow { color: #FFD166; }
+  .score-red { color: #FF6B6B; }
+
+  .overall-verdict {
+    margin-top: 20px;
+    background: var(--orange);
+    border-radius: 3px;
+    padding: 14px 18px;
+    text-align: center;
+  }
+  .overall-verdict .ov-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 4px;
+  }
+  .overall-verdict .ov-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    font-style: italic;
+  }
+
+  /* ─── SECTION WRAPPER ─── */
+  .section {
+    padding: 64px 48px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section:last-of-type { border-bottom: none; }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+    max-width: 120px;
+  }
+  .section-num {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.005em;
+  }
+
+  p.body-text {
+    font-size: 15px;
+    color: #3A3730;
+    line-height: 1.85;
+    max-width: 720px;
+    margin-bottom: 16px;
+  }
+
+  /* ─── MCP FIT TABLE ─── */
+  .mcp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin-top: 36px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .mcp-row {
+    background: #fff;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 180px 1fr 80px;
+    gap: 16px;
+    align-items: center;
+    border-bottom: 1px solid var(--rule);
+  }
+  .mcp-row:nth-child(odd) { background: var(--paper2); }
+  .mcp-row.header {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    grid-column: 1 / -1;
+  }
+  .mcp-tool {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--orange);
+    background: var(--orange-pale);
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: 1px solid rgba(232,93,4,0.2);
+    display: inline-block;
+  }
+  .mcp-use {
+    font-size: 13px;
+    color: #3A3730;
+    line-height: 1.5;
+  }
+  .mcp-avail {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-align: center;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .avail-yes { background: var(--green-pale); color: var(--green); border: 1px solid rgba(26,122,74,0.2); }
+  .avail-partial { background: var(--yellow-pale); color: var(--yellow); border: 1px solid rgba(212,134,10,0.2); }
+  .avail-build { background: var(--red-pale); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+
+  /* ─── ARCHITECTURE DIAGRAM ─── */
+  .arch-container {
+    margin-top: 36px;
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 40px;
+    overflow-x: auto;
+  }
+  .arch-container pre {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--code-text);
+    white-space: pre;
+  }
+  .arch-container .c-orange { color: #FF8C42; }
+  .arch-container .c-green { color: #3DDB85; }
+  .arch-container .c-blue { color: #4FC3F7; }
+  .arch-container .c-purple { color: #B388FF; }
+  .arch-container .c-muted { color: #666; }
+  .arch-container .c-yellow { color: #FFD166; }
+
+  /* ─── WEEK PLAN ─── */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 36px;
+    border: 1px solid var(--ink);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .week-col {
+    border-right: 1px solid var(--ink);
+  }
+  .week-col:last-child { border-right: none; }
+  .week-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 20px;
+    border-bottom: 1px solid #2A2A2A;
+  }
+  .week-header .wh-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .week-header .wh-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .week-header .wh-goal {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--orange-mid);
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .week-tasks {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fff;
+    min-height: 240px;
+  }
+  .week-task {
+    font-size: 12.5px;
+    color: #3A3730;
+    line-height: 1.5;
+    padding-left: 16px;
+    position: relative;
+  }
+  .week-task::before {
+    content: attr(data-day);
+    position: absolute;
+    left: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--orange);
+    top: 2px;
+    font-weight: 600;
+  }
+  .week-task.milestone {
+    margin-top: 8px;
+    padding: 8px 10px 8px 10px;
+    background: var(--orange-pale);
+    border-left: 3px solid var(--orange);
+    border-radius: 0 3px 3px 0;
+    font-weight: 600;
+    color: var(--orange);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+  .week-task.milestone::before { display: none; }
+
+  /* ─── CODE BLOCK ─── */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .code-header {
+    background: #2A2A26;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .code-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .code-dots span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .code-dots .d1 { background: #FF5F57; }
+  .code-dots .d2 { background: #FFBD2E; }
+  .code-dots .d3 { background: #28C840; }
+  .code-filename {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.05em;
+  }
+  .code-block pre {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--code-text);
+    padding: 24px 24px;
+    overflow-x: auto;
+  }
+  .kw { color: #B388FF; }
+  .fn { color: #82CFFF; }
+  .str { color: #A8FF78; }
+  .cm { color: #555; font-style: italic; }
+  .cn { color: #FFD166; }
+  .op { color: #FF8C42; }
+
+  /* ─── RISK TABLE ─── */
+  .risk-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 32px;
+    font-size: 13.5px;
+  }
+  .risk-table thead tr {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .risk-table thead th {
+    padding: 12px 18px;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+  .risk-table tbody tr {
+    border-bottom: 1px solid var(--rule);
+    background: #fff;
+  }
+  .risk-table tbody tr:nth-child(even) { background: var(--paper2); }
+  .risk-table tbody td {
+    padding: 14px 18px;
+    vertical-align: top;
+    line-height: 1.55;
+    color: #3A3730;
+  }
+  .risk-table tbody td:first-child {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .risk-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .risk-hi { background: var(--red-pale); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+  .risk-med { background: var(--yellow-pale); color: var(--yellow); border: 1px solid rgba(212,134,10,0.2); }
+  .risk-lo { background: var(--green-pale); color: var(--green); border: 1px solid rgba(26,122,74,0.2); }
+
+  /* ─── METRICS ─── */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-top: 32px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .metric-cell {
+    background: #fff;
+    padding: 24px 20px;
+    border-right: 1px solid var(--rule);
+  }
+  .metric-cell:last-child { border-right: none; }
+  .metric-cell:nth-child(odd) { background: var(--paper2); }
+  .metric-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .metric-target {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--orange);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .metric-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* ─── DECISION CALLOUT ─── */
+  .callout {
+    margin: 28px 0;
+    padding: 24px 28px;
+    border-left: 4px solid var(--orange);
+    background: var(--orange-pale);
+    border-radius: 0 6px 6px 0;
+  }
+  .callout .cl-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 8px;
+  }
+  .callout p {
+    font-size: 14px;
+    color: #5A3000;
+    line-height: 1.7;
+  }
+  .callout p strong { color: var(--orange); }
+
+  .callout.green {
+    border-left-color: var(--green);
+    background: var(--green-pale);
+  }
+  .callout.green .cl-label { color: var(--green); }
+  .callout.green p { color: #0A3A20; }
+  .callout.green p strong { color: var(--green); }
+
+  /* ─── DOWNLOAD BTN ─── */
+  .dl-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 12px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 99;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  .dl-btn:hover {
+    background: var(--orange);
+    transform: translateY(-2px);
+  }
+
+  /* ─── UL STYLES ─── */
+  ul.doc-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px 0;
+  }
+  ul.doc-list li {
+    font-size: 14.5px;
+    color: #3A3730;
+    padding-left: 22px;
+    position: relative;
+    line-height: 1.6;
+  }
+  ul.doc-list li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--orange);
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+  }
+
+  /* ─── TWO COL ─── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .week-grid { grid-template-columns: 1fr 1fr; }
+    .metrics-row { grid-template-columns: 1fr 1fr; }
+    .section, .hero { padding: 40px 24px; }
+    .topstrip { padding: 10px 24px; }
+    .mcp-row { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    .dl-btn { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<button class="dl-btn" onclick="window.print()">⬇ Save PDF</button>
+
+<!-- TOP STRIP -->
+<div class="topstrip">
+  <span>Pain Point 01 — Smart Replenishment Agent · Build Plan</span>
+  <div class="verdict">
+    <span class="verdict-dot"></span>
+    <span>Build Verdict: Ship It</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<header class="hero">
+  <div>
+    <div class="hero-eyebrow">Swiggy Builders Club · Instamart MCP v1</div>
+    <h1>Smart<br><em>Replenishment</em><br>Agent</h1>
+    <p class="hero-desc">A full judgment, MCP fit analysis, architecture diagram, 4-week execution plan, and code skeleton — everything needed to ship the first working version of an AI-native auto-restock agent on top of Swiggy Instamart's MCP stack.</p>
+  </div>
+
+  <div class="verdict-card">
+    <div class="vc-label">// Idea Scorecard</div>
+    <div class="verdict-row">
+      <span class="vr-name">User Pain Severity</span>
+      <span class="vr-score score-green">9 / 10</span>
+    </div>
+    <div class="verdict-row">
+      <span class="vr-name">MCP Fit (tools available)</span>
+      <span class="vr-score score-green">8 / 10</span>
+    </div>
+    <div class="verdict-row">
+      <span class="vr-name">Implementation Effort</span>
+      <span class="vr-score score-yellow">Med</span>
+    </div>
+    <div class="verdict-row">
+      <span class="vr-name">Time to Working MVP</span>
+      <span class="vr-score score-green">4 wks</span>
+    </div>
+    <div class="verdict-row">
+      <span class="vr-name">Monetisation Potential</span>
+      <span class="vr-score score-green">High</span>
+    </div>
+    <div class="verdict-row">
+      <span class="vr-name">Differentiation</span>
+      <span class="vr-score score-green">Strong</span>
+    </div>
+    <div class="overall-verdict">
+      <div class="ov-label">Overall Verdict</div>
+      <div class="ov-text">Build. Ship. Now.</div>
+    </div>
+  </div>
+</header>
+
+
+<!-- ═══════════════ SECTION 1 — WHY THIS WORKS ═══════════════ -->
+<section class="section" id="why">
+  <div class="section-label"><span class="section-num">01</span> Why This Idea Works</div>
+  <div class="two-col">
+    <div>
+      <h2>The math is already in your favour.</h2>
+      <p class="body-text">The core insight is a structural mismatch: Swiggy already knows your full order history via <code>get_orders</code> and surfaces frequently bought items via <code>your_go_to_items</code> — but does absolutely nothing autonomous with that data. The user still opens the app, searches for "milk", adds it, searches for "bread"... every single week.</p>
+      <p class="body-text">That is 47% of orders happening purely through habit, where the app adds zero cognitive leverage. Every single one of those sessions is a candidate for automation. The activation energy required is a consumption model and a single notification.</p>
+      <div class="callout green">
+        <div class="cl-label">// The Core Bet</div>
+        <p>If you can get the <strong>predicted cart to be 80% right</strong>, users will confirm it rather than rebuild from scratch. Accuracy doesn't need to be perfect — it needs to be better than starting over.</p>
+      </div>
+    </div>
+    <div>
+      <h3>What makes it sticky</h3>
+      <ul class="doc-list">
+        <li><strong>Habit compression.</strong> Turns a 12-minute weekly session into a 10-second confirm tap. Users will not go back once they have this.</li>
+        <li><strong>Data flywheel.</strong> Each correction ("still have eggs — skip") trains the model. Gets smarter every week.</li>
+        <li><strong>Natural upsell surface.</strong> "Your restock is ready — we also noticed you're low on cooking oil. Add it?" opens a clean, non-spammy upsell lane.</li>
+        <li><strong>No new account needed.</strong> Rides entirely on the user's existing Swiggy history. Zero cold start for existing users.</li>
+        <li><strong>Defensible moat.</strong> The longer a user uses the agent, the more personalised it becomes. Hard to replicate elsewhere.</li>
+      </ul>
+      <div class="callout" style="margin-top: 20px;">
+        <div class="cl-label">// Swiggy's narrative fit</div>
+        <p>Swiggy launched MCP specifically to enable <strong>"AI agents that act on behalf of users."</strong> A smart restock agent is the most literal, highest-value interpretation of that vision. Perfect story for a Builders Club submission.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════ SECTION 2 — MCP FIT ═══════════════ -->
+<section class="section" id="mcp-fit">
+  <div class="section-label"><span class="section-num">02</span> MCP Tool Fit Analysis</div>
+  <h2>Every tool you need exists.</h2>
+  <p class="body-text">The Instamart MCP server exposes 13 tools. Six of them are a direct fit for this agent. Nothing critical is missing — the only custom work is the consumption model, which lives entirely in your own backend.</p>
+
+  <div class="mcp-grid" style="display:block; border-radius:6px; overflow:hidden; border:1px solid var(--rule); margin-top:36px;">
+    <div class="mcp-row header" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; background:var(--ink); color:var(--paper); padding:12px 24px;">
+      <span>MCP Tool</span>
+      <span>How this agent uses it</span>
+      <span style="text-align:center">Status</span>
+    </div>
+    <div class="mcp-row" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; padding:16px 24px; background:#fff; border-bottom:1px solid var(--rule);">
+      <span class="mcp-tool">get_orders</span>
+      <span class="mcp-use">Primary data source. Pull full Instamart order history → extract product IDs, quantities, and timestamps. The raw material for your consumption model.</span>
+      <span class="mcp-avail avail-yes">✓ READY</span>
+    </div>
+    <div class="mcp-row" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; padding:16px 24px; background:var(--paper2); border-bottom:1px solid var(--rule);">
+      <span class="mcp-tool">your_go_to_items</span>
+      <span class="mcp-use">Bootstrap the initial product candidate list. Cross-reference with order timestamps to seed the model before you have enough history for frequency inference.</span>
+      <span class="mcp-avail avail-yes">✓ READY</span>
+    </div>
+    <div class="mcp-row" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; padding:16px 24px; background:#fff; border-bottom:1px solid var(--rule);">
+      <span class="mcp-tool">get_addresses</span>
+      <span class="mcp-use">Resolve delivery address for cart pre-build and confirmation. Required before update_cart is called. Always pick the "Home" label, fall back to last-used.</span>
+      <span class="mcp-avail avail-yes">✓ READY</span>
+    </div>
+    <div class="mcp-row" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; padding:16px 24px; background:var(--paper2); border-bottom:1px solid var(--rule);">
+      <span class="mcp-tool">search_products</span>
+      <span class="mcp-use">Validate items are still available before adding to cart. Also used for price refresh — confirm the current price matches user's expectation before auto-adding.</span>
+      <span class="mcp-avail avail-yes">✓ READY</span>
+    </div>
+    <div class="mcp-row" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; padding:16px 24px; background:#fff; border-bottom:1px solid var(--rule);">
+      <span class="mcp-tool">update_cart</span>
+      <span class="mcp-use">Pre-build the predicted cart. Called after user confirms via notification — replaces entire cart with the replenishment items. This is the core action tool.</span>
+      <span class="mcp-avail avail-yes">✓ READY</span>
+    </div>
+    <div class="mcp-row" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; padding:16px 24px; background:var(--paper2); border-bottom:1px solid var(--rule);">
+      <span class="mcp-tool">get_cart</span>
+      <span class="mcp-use">Validate cart state after update_cart. Surface total to user before checkout so there are no surprises on the ₹1000 cap or unexpected items.</span>
+      <span class="mcp-avail avail-yes">✓ READY</span>
+    </div>
+    <div class="mcp-row" style="display:grid; grid-template-columns: 200px 1fr 100px; gap:16px; align-items:center; padding:16px 24px; background:#fff;">
+      <span class="mcp-tool">checkout</span>
+      <span class="mcp-use">Final order placement after user confirms cart. COD only in v1. Check total ≤ ₹1000 before calling. Not idempotent — check get_orders on 5xx before retry.</span>
+      <span class="mcp-avail avail-yes">✓ READY</span>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:32px;">
+    <div class="cl-label">// One Gap: No Consumption Model in MCP</div>
+    <p>The only thing MCP does <em>not</em> provide is the <strong>consumption rate model</strong> — the logic that infers "this user buys 2L milk every 4.8 days." That lives in your own backend (a simple Supabase table). This is not a blocker; it is the actual product you are building on top of the MCP primitives.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════ SECTION 3 — ARCHITECTURE ═══════════════ -->
+<section class="section" id="arch">
+  <div class="section-label"><span class="section-num">03</span> System Architecture</div>
+  <h2>Five components. No unnecessary complexity.</h2>
+  <p class="body-text">The agent is a thin AI orchestration layer sitting between Swiggy's MCP server and the user. The consumption model is the only custom backend logic. Everything else delegates to MCP tools.</p>
+
+  <div class="arch-container">
+    <pre>
+<span class="c-muted">┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SMART REPLENISHMENT AGENT                            │
+└─────────────────────────────────────────────────────────────────────────────┘</span>
+
+<span class="c-yellow">╔══════════════════╗</span>        <span class="c-muted">(daily cron)</span>
+<span class="c-yellow">║   VERCEL CRON    ║</span>  ────►  <span class="c-orange">[ Replenishment Scheduler ]</span>
+<span class="c-yellow">║  runs at 08:00   ║</span>          Checks: is today a predicted restock day?
+<span class="c-yellow">╚══════════════════╝</span>          For each user whose model says YES →
+
+                                    │
+                                    ▼
+
+<span class="c-blue">╔═══════════════════════════════════════════════════════╗</span>
+<span class="c-blue">║              CONSUMPTION MODEL ENGINE                 ║</span>
+<span class="c-blue">║   (Supabase: product_cadences table)                 ║</span>
+<span class="c-blue">║                                                       ║</span>
+<span class="c-blue">║   product_id │ avg_days_between │ last_ordered │ qty  ║</span>
+<span class="c-blue">║   ──────────   ────────────────   ──────────────────  ║</span>
+<span class="c-blue">║   SKU_00123  │      4.8         │   2025-05-01 │  2   ║</span>
+<span class="c-blue">║   SKU_00456  │      7.2         │   2025-04-29 │  1   ║</span>
+<span class="c-blue">║   SKU_00789  │      3.1         │   2025-05-03 │  4   ║</span>
+<span class="c-blue">╚═══════════════════════════════════════════════════════╝</span>
+
+              Model computes: predicted_restock_date = last_ordered + avg_days
+              Items where predicted_restock_date ≤ today + 1 → candidate cart
+
+                                    │
+                                    ▼
+
+<span class="c-orange">╔═══════════════════════════════════════════════════════╗</span>
+<span class="c-orange">║            MCP TOOL CHAIN (per candidate cart)        ║</span>
+<span class="c-orange">╚═══════════════════════════════════════════════════════╝</span>
+
+   <span class="c-orange">get_orders</span> ──► seed / refresh consumption model (nightly)
+   <span class="c-orange">your_go_to_items</span> ──► bootstrap model for new users (cold start)
+   <span class="c-orange">search_products</span> ──► validate availability + current price per item
+   <span class="c-orange">get_addresses</span> ──► resolve "Home" addressId for cart
+   <span class="c-orange">update_cart</span> ──► pre-build cart with validated items + quantities
+   <span class="c-orange">get_cart</span> ──► surface total to user in notification
+
+                                    │
+                                    ▼
+
+<span class="c-green">╔═══════════════════════════════════════════════════════╗</span>
+<span class="c-green">║              USER NOTIFICATION SURFACE                ║</span>
+<span class="c-green">╠═══════════════════════════════════════════════════════╣</span>
+<span class="c-green">║  Push (FCM / Expo):                                   ║</span>
+<span class="c-green">║  "🛒 Your weekly restock is ready — 8 items, ₹847"   ║</span>
+<span class="c-green">║  [ Confirm & Order ]   [ Edit Cart ]   [ Skip ]       ║</span>
+<span class="c-green">╚═══════════════════════════════════════════════════════╝</span>
+
+                                    │
+                         ┌──────────┴──────────┐
+                         ▼                      ▼
+              <span class="c-green">User taps CONFIRM</span>          <span class="c-muted">User taps EDIT</span>
+                         │                      │
+                    <span class="c-orange">checkout</span>()         Open cart in app
+                    COD · ≤ ₹1000         for manual tweaks
+                         │
+                         ▼
+             <span class="c-green">Order placed. Track via</span>
+             <span class="c-green">track_order(orderId)</span>
+
+<span class="c-muted">─────────────────────────────────────────────────────────────────────────────</span>
+<span class="c-purple">FEEDBACK LOOP: Every "Skip" or cart edit → update model weights for that SKU</span>
+<span class="c-purple">             "Still have eggs" → push last_ordered forward by 3 days</span>
+<span class="c-purple">             Model improves passively with each weekly cycle</span>
+    </pre>
+  </div>
+</section>
+
+
+<!-- ═══════════════ SECTION 4 — 4-WEEK PLAN ═══════════════ -->
+<section class="section" id="plan">
+  <div class="section-label"><span class="section-num">04</span> 4-Week Execution Plan</div>
+  <h2>Working MVP in 28 days.</h2>
+  <p class="body-text">Solo or 2-person team. Each week ends with a testable deliverable. No week is a dead sprint — something works at the end of every 7 days.</p>
+
+  <div class="week-grid">
+    <div class="week-col">
+      <div class="week-header">
+        <div class="wh-num">Week 01</div>
+        <div class="wh-title">Auth + Data Layer</div>
+        <div class="wh-goal">→ Can read order history</div>
+      </div>
+      <div class="week-tasks">
+        <div class="week-task" data-day="D1">Apply Swiggy Builders Club access. Start OAuth 2.1 + PKCE flow setup.</div>
+        <div class="week-task" data-day="D2">Wire <code>get_orders</code> + <code>your_go_to_items</code>. Dump raw data to console.</div>
+        <div class="week-task" data-day="D3">Design Supabase schema: <code>product_cadences</code>, <code>user_prefs</code>, <code>restock_events</code>.</div>
+        <div class="week-task" data-day="D4">Build order history parser — extract product_id, qty, timestamp per order line.</div>
+        <div class="week-task" data-day="D5">Write basic frequency inference: avg_days_between_purchases per SKU.</div>
+        <div class="week-task milestone">🏁 MILESTONE: Console shows "Milk: restock in 2 days" from real history</div>
+      </div>
+    </div>
+
+    <div class="week-col">
+      <div class="week-header">
+        <div class="wh-num">Week 02</div>
+        <div class="wh-title">Cart Builder</div>
+        <div class="wh-goal">→ Can pre-build a cart</div>
+      </div>
+      <div class="week-tasks">
+        <div class="week-task" data-day="D8">Wire <code>search_products</code> — validate each candidate item is in stock + get current price.</div>
+        <div class="week-task" data-day="D9">Wire <code>get_addresses</code> — resolve Home address ID for cart context.</div>
+        <div class="week-task" data-day="D10">Implement <code>update_cart</code> call with candidate items + quantities.</div>
+        <div class="week-task" data-day="D11">Wire <code>get_cart</code> — read back total and item list for confirmation display.</div>
+        <div class="week-task" data-day="D12">Add ₹1000 cap check. If over: sort by priority score, trim from bottom.</div>
+        <div class="week-task milestone">🏁 MILESTONE: Agent pre-builds real Instamart cart from predicted items</div>
+      </div>
+    </div>
+
+    <div class="week-col">
+      <div class="week-header">
+        <div class="wh-num">Week 03</div>
+        <div class="wh-title">Notification + Confirm</div>
+        <div class="wh-goal">→ End-to-end, one tap</div>
+      </div>
+      <div class="week-tasks">
+        <div class="week-task" data-day="D15">Set up Vercel Cron job — runs daily 08:00 IST, checks restock candidates per user.</div>
+        <div class="week-task" data-day="D16">Integrate FCM / Expo Push. Send "Your cart is ready" notification with total.</div>
+        <div class="week-task" data-day="D17">Build confirm endpoint — user taps → calls <code>checkout</code> → returns order ID.</div>
+        <div class="week-task" data-day="D18">Build edit flow — taps "Edit Cart" → deep-link opens Instamart cart in app.</div>
+        <div class="week-task" data-day="D19">Build skip + snooze. "Skip" → push last_ordered + avg_days. "Snooze 2 days" → defer.</div>
+        <div class="week-task milestone">🏁 MILESTONE: Full flow works on real phone — notification → order placed</div>
+      </div>
+    </div>
+
+    <div class="week-col">
+      <div class="week-header">
+        <div class="wh-num">Week 04</div>
+        <div class="wh-title">Feedback + Polish</div>
+        <div class="wh-goal">→ Ready for demo video</div>
+      </div>
+      <div class="week-tasks">
+        <div class="week-task" data-day="D22">Build feedback capture — record every edit/skip and adjust model weights per SKU.</div>
+        <div class="week-task" data-day="D23">Add "Still have X?" friction prompt for items skipped 2+ weeks in a row.</div>
+        <div class="week-task" data-day="D24">Build minimal settings UI — enable/disable restock agent, set preferred time.</div>
+        <div class="week-task" data-day="D25">Add retry logic — 5xx on checkout → check <code>get_orders</code> before retrying (not idempotent!).</div>
+        <div class="week-task" data-day="D26">Record demo video. Submit to Swiggy Builders Club with use case + metrics story.</div>
+        <div class="week-task milestone">🏁 MILESTONE: Demo submitted. Working product in hands of real users.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════ SECTION 5 — CODE SKELETON ═══════════════ -->
+<section class="section" id="code">
+  <div class="section-label"><span class="section-num">05</span> Code Skeleton</div>
+  <h2>The three files that matter most.</h2>
+  <p class="body-text">These are the core functions you'll write in Week 1–2. Everything else is wiring and UI.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="code-filename">lib/consumption-model.ts</span>
+    </div>
+    <pre><span class="cm">// Infer purchase frequency per SKU from raw order history</span>
+
+<span class="kw">interface</span> <span class="cn">ProductCadence</span> {
+  productId: <span class="kw">string</span>;
+  avgDaysBetween: <span class="kw">number</span>;
+  lastOrderedAt: <span class="cn">Date</span>;
+  lastQty: <span class="kw">number</span>;
+  predictedRestockDate: <span class="cn">Date</span>;
+  confidence: <span class="str">'high'</span> | <span class="str">'medium'</span> | <span class="str">'low'</span>;
+}
+
+<span class="kw">export function</span> <span class="fn">buildConsumptionModel</span>(
+  orders: <span class="cn">InstamrtOrder</span>[]
+): <span class="cn">ProductCadence</span>[] {
+  <span class="cm">// Group order lines by product_id</span>
+  <span class="kw">const</span> byProduct = <span class="fn">groupBy</span>(
+    orders.<span class="fn">flatMap</span>(o => o.items),
+    item => item.productId
+  );
+
+  <span class="kw">return</span> <span class="cn">Object</span>.<span class="fn">entries</span>(byProduct).<span class="fn">map</span>(([productId, entries]) => {
+    <span class="cm">// Sort by date ascending</span>
+    <span class="kw">const</span> sorted = entries.<span class="fn">sort</span>((a, b) =>
+      <span class="kw">new</span> <span class="cn">Date</span>(a.orderedAt).<span class="fn">getTime</span>() - <span class="kw">new</span> <span class="cn">Date</span>(b.orderedAt).<span class="fn">getTime</span>()
+    );
+
+    <span class="cm">// Compute gaps between purchases (in days)</span>
+    <span class="kw">const</span> gaps: <span class="kw">number</span>[] = [];
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="op">1</span>; i < sorted.length; i++) {
+      <span class="kw">const</span> diff = (<span class="kw">new</span> <span class="cn">Date</span>(sorted[i].orderedAt).<span class="fn">getTime</span>()
+        - <span class="kw">new</span> <span class="cn">Date</span>(sorted[i-<span class="op">1</span>].orderedAt).<span class="fn">getTime</span>()) / <span class="op">86_400_000</span>;
+      gaps.<span class="fn">push</span>(diff);
+    }
+
+    <span class="kw">const</span> avgDays = gaps.length > <span class="op">0</span>
+      ? gaps.<span class="fn">reduce</span>((a, b) => a + b, <span class="op">0</span>) / gaps.length
+      : <span class="op">7</span>; <span class="cm">// default to weekly if only 1 purchase</span>
+
+    <span class="kw">const</span> last = sorted[sorted.length - <span class="op">1</span>];
+    <span class="kw">const</span> predictedRestockDate = <span class="kw">new</span> <span class="cn">Date</span>(
+      <span class="kw">new</span> <span class="cn">Date</span>(last.orderedAt).<span class="fn">getTime</span>() + avgDays * <span class="op">86_400_000</span>
+    );
+
+    <span class="kw">return</span> {
+      productId,
+      avgDaysBetween: <span class="cn">Math</span>.<span class="fn">round</span>(avgDays * <span class="op">10</span>) / <span class="op">10</span>,
+      lastOrderedAt: <span class="kw">new</span> <span class="cn">Date</span>(last.orderedAt),
+      lastQty: last.quantity,
+      predictedRestockDate,
+      <span class="cm">// confidence based on data points: &gt;4 = high, 2–4 = medium, 1 = low</span>
+      confidence: sorted.length >= <span class="op">4</span> ? <span class="str">'high'</span>
+                : sorted.length >= <span class="op">2</span> ? <span class="str">'medium'</span> : <span class="str">'low'</span>,
+    };
+  });
+}</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="code-filename">lib/cart-builder.ts</span>
+    </div>
+    <pre><span class="cm">// Build and validate the predicted replenishment cart via MCP</span>
+
+<span class="kw">export async function</span> <span class="fn">buildReplenishmentCart</span>(
+  client: <span class="cn">MCPClient</span>,
+  candidates: <span class="cn">ProductCadence</span>[]
+): <span class="cn">Promise</span>&lt;<span class="cn">CartSummary</span>&gt; {
+  <span class="cm">// Step 1 — Resolve address</span>
+  <span class="kw">const</span> addresses = <span class="kw">await</span> client.<span class="fn">callTool</span>({ name: <span class="str">"get_addresses"</span> });
+  <span class="kw">const</span> home = addresses.data.<span class="fn">find</span>(a => a.label === <span class="str">"Home"</span>)
+    ?? addresses.data[<span class="op">0</span>];
+  <span class="kw">if</span> (!home) <span class="kw">throw new</span> <span class="cn">Error</span>(<span class="str">"No saved address found"</span>);
+
+  <span class="cm">// Step 2 — Validate each candidate item: in stock + price check</span>
+  <span class="kw">const</span> validItems: <span class="cn">CartItem</span>[] = [];
+  <span class="kw">for</span> (<span class="kw">const</span> c <span class="kw">of</span> candidates) {
+    <span class="kw">const</span> result = <span class="kw">await</span> client.<span class="fn">callTool</span>({
+      name: <span class="str">"search_products"</span>,
+      arguments: { addressId: home.id, query: c.productId }
+    });
+    <span class="kw">const</span> product = result.data.products[<span class="op">0</span>];
+    <span class="kw">if</span> (product?.inStock) {
+      validItems.<span class="fn">push</span>({ itemId: product.id, quantity: c.lastQty });
+    }
+    <span class="cm">// Out-of-stock items silently skipped (substitution engine = Pain Point 05)</span>
+  }
+
+  <span class="cm">// Step 3 — Pre-build cart</span>
+  <span class="kw">await</span> client.<span class="fn">callTool</span>({
+    name: <span class="str">"update_cart"</span>,
+    arguments: { items: validItems }
+  });
+
+  <span class="cm">// Step 4 — Read back cart for confirmation display</span>
+  <span class="kw">const</span> cart = <span class="kw">await</span> client.<span class="fn">callTool</span>({ name: <span class="str">"get_cart"</span> });
+
+  <span class="cm">// Step 5 — Cap check (₹1000 limit in v1)</span>
+  <span class="kw">if</span> (cart.data.total > <span class="op">1000</span>) {
+    <span class="kw">return</span> { cart: cart.data, warning: <span class="str">"cart_cap_exceeded"</span> };
+  }
+
+  <span class="kw">return</span> { cart: cart.data, warning: <span class="kw">null</span> };
+}
+
+<span class="cm">// Confirm and place the order (called after user taps "Confirm")</span>
+<span class="kw">export async function</span> <span class="fn">confirmRestockOrder</span>(
+  client: <span class="cn">MCPClient</span>
+): <span class="cn">Promise</span>&lt;<span class="cn">string</span>&gt; {
+  <span class="kw">const</span> order = <span class="kw">await</span> client.<span class="fn">callTool</span>({
+    name: <span class="str">"checkout"</span>,
+    arguments: { paymentMethod: <span class="str">"COD"</span> }
+  });
+  <span class="cm">// ⚠ checkout is NOT idempotent — on 5xx, check get_orders before retry</span>
+  <span class="kw">return</span> order.data.orderId;
+}</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="code-filename">api/cron/daily-restock.ts  (Vercel Cron)</span>
+    </div>
+    <pre><span class="cm">// Runs daily at 08:00 IST — check which users need a restock today</span>
+
+<span class="kw">export async function</span> <span class="fn">GET</span>() {
+  <span class="kw">const</span> today = <span class="kw">new</span> <span class="cn">Date</span>();
+
+  <span class="cm">// Load all users with active restock agent</span>
+  <span class="kw">const</span> users = <span class="kw">await</span> db
+    .<span class="fn">from</span>(<span class="str">'user_prefs'</span>)
+    .<span class="fn">select</span>(<span class="str">'*'</span>)
+    .<span class="fn">eq</span>(<span class="str">'restock_enabled'</span>, <span class="kw">true</span>);
+
+  <span class="kw">for</span> (<span class="kw">const</span> user <span class="kw">of</span> users.data) {
+    <span class="cm">// Fetch their cadence model from DB</span>
+    <span class="kw">const</span> cadences = <span class="kw">await</span> db
+      .<span class="fn">from</span>(<span class="str">'product_cadences'</span>)
+      .<span class="fn">select</span>(<span class="str">'*'</span>)
+      .<span class="fn">eq</span>(<span class="str">'user_id'</span>, user.id);
+
+    <span class="cm">// Items predicted to run out today or tomorrow</span>
+    <span class="kw">const</span> restockCandidates = cadences.data.<span class="fn">filter</span>(c => {
+      <span class="kw">const</span> daysUntilRestock = (
+        <span class="kw">new</span> <span class="cn">Date</span>(c.predicted_restock_date).<span class="fn">getTime</span>() - today.<span class="fn">getTime</span>()
+      ) / <span class="op">86_400_000</span>;
+      <span class="kw">return</span> daysUntilRestock <= <span class="op">1</span>; <span class="cm">// due today or tomorrow</span>
+    });
+
+    <span class="kw">if</span> (restockCandidates.length === <span class="op">0</span>) <span class="kw">continue</span>;
+
+    <span class="cm">// Build the cart using their MCP session</span>
+    <span class="kw">const</span> mcpClient = <span class="kw">await</span> <span class="fn">getMCPClientForUser</span>(user.id);
+    <span class="kw">const</span> { cart, warning } = <span class="kw">await</span> <span class="fn">buildReplenishmentCart</span>(
+      mcpClient, restockCandidates
+    );
+
+    <span class="cm">// Fire push notification</span>
+    <span class="kw">await</span> <span class="fn">sendPushNotification</span>(user.pushToken, {
+      title: <span class="str">`🛒 Your weekly restock is ready`</span>,
+      body: <span class="str">`${cart.itemCount} items · ₹${cart.total} · Tap to confirm`</span>,
+      data: { cartTotal: cart.total, warning, userId: user.id }
+    });
+  }
+
+  <span class="kw">return</span> <span class="cn">Response</span>.<span class="fn">json</span>({ ok: <span class="kw">true</span> });
+}</pre>
+  </div>
+</section>
+
+
+<!-- ═══════════════ SECTION 6 — RISKS ═══════════════ -->
+<section class="section" id="risks">
+  <div class="section-label"><span class="section-num">06</span> Risks & Mitigations</div>
+  <h2>Four risks. All manageable.</h2>
+
+  <table class="risk-table">
+    <thead>
+      <tr>
+        <th>Risk</th>
+        <th>Likelihood</th>
+        <th>Impact</th>
+        <th>Mitigation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Sparse order history — new users have &lt;3 Instamart orders</td>
+        <td><span class="risk-badge risk-hi">High</span></td>
+        <td><span class="risk-badge risk-med">Medium</span></td>
+        <td>Cold-start via <code>your_go_to_items</code> as seed. Default to 7-day cadence for unknown items. Show confidence indicator on notification ("Based on 2 orders — your first suggested cart").</td>
+      </tr>
+      <tr>
+        <td>Checkout not idempotent — double order on 5xx retry</td>
+        <td><span class="risk-badge risk-med">Medium</span></td>
+        <td><span class="risk-badge risk-hi">High</span></td>
+        <td>On any 5xx from <code>checkout</code>, call <code>get_orders</code> first and check if an order was placed in the last 2 minutes before retrying. Never retry blindly.</td>
+      </tr>
+      <tr>
+        <td>User feels cart auto-add is intrusive / creepy</td>
+        <td><span class="risk-badge risk-med">Medium</span></td>
+        <td><span class="risk-badge risk-med">Medium</span></td>
+        <td>Hard opt-in only. Cart is pre-built but notification says "ready to review" — user must tap to confirm. Never auto-place without explicit confirmation. Make "Disable Agent" one tap.</td>
+      </tr>
+      <tr>
+        <td>MCP session token expires (5-day TTL) during cron</td>
+        <td><span class="risk-badge risk-hi">High</span></td>
+        <td><span class="risk-badge risk-med">Medium</span></td>
+        <td>Catch 401 / JSON-RPC -32001 per user. Mark user as "needs reauth" in DB. Send notification: "Reconnect Swiggy to keep your restock agent running." Re-run after reauth.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+
+<!-- ═══════════════ SECTION 7 — SUCCESS METRICS ═══════════════ -->
+<section class="section" id="metrics">
+  <div class="section-label"><span class="section-num">07</span> Success Metrics — Beta Cohort (4 Weeks)</div>
+  <h2>What "working" looks like.</h2>
+  <p class="body-text">Run with 20–50 opted-in users from your network first. These are the numbers that tell you if the idea has legs before you scale.</p>
+
+  <div class="metrics-row">
+    <div class="metric-cell">
+      <div class="metric-name">Cart Confirm Rate</div>
+      <div class="metric-target">&gt; 40%</div>
+      <div class="metric-desc">% of users who tap "Confirm" when shown a pre-built restock cart</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-name">Cart Accuracy</div>
+      <div class="metric-target">&gt; 75%</div>
+      <div class="metric-desc">Items in pre-built cart that user keeps without editing</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-name">Time Saved / Week</div>
+      <div class="metric-target">&gt; 10 min</div>
+      <div class="metric-desc">vs. manual session (measure via session length in Swiggy app baseline)</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-name">Week 4 Retention</div>
+      <div class="metric-target">&gt; 70%</div>
+      <div class="metric-desc">% of beta users still using the agent after 4 weeks</div>
+    </div>
+  </div>
+
+  <div class="callout green" style="margin-top: 32px;">
+    <div class="cl-label">// The Story for Swiggy</div>
+    <p>The Builders Club submission narrative: <strong>"We reduced the cognitive load of repeat grocery ordering from a 12-minute weekly search session to a single notification confirmation, using exclusively the tools your MCP server already exposes."</strong> That is a clean, verifiable, high-value story — with a demo video showing a notification → order placed in under 10 seconds.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div style="background: var(--ink); color: var(--paper); padding: 28px 48px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+  <span style="font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; font-style: italic;">Smart Replenishment Agent — Build Plan</span>
+  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #666;">Swiggy Builders Club · Instamart MCP v1 · 13 Tools · 4 Weeks to MVP</span>
+</div>
+
+</body>
+</html>
