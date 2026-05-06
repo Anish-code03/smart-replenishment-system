@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swiggy Instamart · Smart Replenishment Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design tokens (see design.md) ── */
+    :root {
+      --orange:        #FC8019;
+      --orange-dark:   #E8710A;
+      --orange-light:  #FFF3E8;
+      --dark:          #282C3F;
+      --green:         #60B246;
+      --green-light:   #EBF5E6;
+      --red:           #DB3236;
+      --red-light:     #FDECEA;
+      --text-primary:  #3D4152;
+      --text-secondary:#686B78;
+      --border:        #D4D5D9;
+      --bg:            #F2F2F2;
+      --white:         #FFFFFF;
+      --shadow:        rgba(40,44,63,0.10);
+      --radius:        12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      background: var(--dark);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .logo-box {
+      width: 38px; height: 38px;
+      background: var(--orange);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .header-info h1 { font-size: 15px; font-weight: 600; color: #fff; }
+    .header-info p  { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+    .ai-badge {
+      margin-left: auto;
+      background: var(--green);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .ai-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: #fff;
+      border-radius: 50%;
+      animation: pulse 1.6s ease infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ── Chat area ── */
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 16px 140px;
+    }
+    .chat-inner {
+      max-width: 740px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Message row ── */
+    .msg-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      animation: fadeUp 0.28s ease forwards;
+      opacity: 0;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .avatar {
+      width: 36px; height: 36px;
+      background: var(--orange);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .bubble {
+      background: var(--white);
+      border-radius: 0 var(--radius) var(--radius) var(--radius);
+      padding: 13px 16px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text-primary);
+      box-shadow: 0 1px 4px var(--shadow);
+      max-width: 560px;
+    }
+    .bubble strong { color: var(--dark); }
+    .bubble em { color: var(--text-secondary); font-style: normal; font-size: 13px; }
+
+    /* Typing dots */
+    .typing-dots { display: flex; gap: 4px; padding: 6px 2px; align-items: center; }
+    .typing-dots span {
+      width: 7px; height: 7px;
+      background: var(--border);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.18s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes bounce {
+      0%,60%,100% { transform: translateY(0); opacity: 0.35; }
+      30%          { transform: translateY(-7px); opacity: 1; }
+    }
+
+    /* Section divider label */
+    .section-label {
+      padding-left: 46px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ── Consumption model table ── */
+    .model-card {
+      margin-left: 46px;
+      background: var(--white);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 1px 6px var(--shadow);
+      animation: fadeUp 0.28s ease forwards;
+      opacity: 0;
+    }
+    .model-head {
+      background: var(--dark);
+      display: grid;
+      grid-template-columns: 1.6fr 0.7fr 0.7fr 0.8fr 0.8fr 0.6fr;
+      gap: 8px;
+      padding: 10px 16px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+    .model-row {
+      display: grid;
+      grid-template-columns: 1.6fr 0.7fr 0.7fr 0.8fr 0.8fr 0.6fr;
+      gap: 8px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--bg);
+      align-items: center;
+      font-size: 13px;
+      transition: background 0.12s;
+    }
+    .model-row:last-child { border-bottom: none; }
+    .model-row:hover { background: var(--bg); }
+    .item-cell { display: flex; align-items: center; gap: 9px; }
+    .item-emo  { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+    .item-name { font-weight: 600; color: var(--dark); font-size: 13px; }
+    .item-cat  { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+    .muted-cell { font-size: 12px; color: var(--text-secondary); }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .badge-due      { background: var(--orange-light); color: var(--orange-dark); }
+    .badge-overdue  { background: var(--red-light);    color: var(--red); }
+    .badge-ok       { background: var(--green-light);  color: #3A7D2C; }
+    .badge-high     { background: var(--green-light);  color: #3A7D2C; }
+    .badge-medium   { background: var(--orange-light); color: #C86A00; }
+    .badge-low      { background: var(--red-light);    color: var(--red); }
+
+    /* ── Restock candidates ── */
+    .candidates-wrap {
+      margin-left: 46px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      animation: fadeUp 0.28s ease forwards;
+      opacity: 0;
+    }
+    .cand-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--orange);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 4px var(--shadow);
+      transition: transform 0.28s ease, opacity 0.28s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+      overflow: hidden;
+    }
+    .cand-card.overdue { border-left-color: var(--red); }
+    .cand-card.removed {
+      transform: translateX(110%);
+      opacity: 0;
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-bottom: -8px;
+    }
+    .cand-emo  { font-size: 26px; flex-shrink: 0; width: 34px; text-align: center; }
+    .cand-info { flex: 1; min-width: 0; }
+    .cand-name { font-size: 14px; font-weight: 600; color: var(--dark); }
+    .cand-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .cand-price {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--dark);
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .cand-price small { display: block; font-size: 11px; font-weight: 400; color: var(--text-secondary); }
+    .remove-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+    .remove-btn:hover { background: var(--red-light); color: var(--red); }
+
+    .empty-cands {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-style: italic;
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1.5px dashed var(--border);
+    }
+
+    /* Cart total bar */
+    .total-bar {
+      margin-left: 46px;
+      background: var(--orange-light);
+      border: 1px solid rgba(252,128,25,0.25);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: fadeUp 0.28s ease forwards;
+      opacity: 0;
+    }
+    .total-bar .tl-label { font-size: 13px; color: var(--text-secondary); }
+    .total-bar .tl-val   { font-size: 20px; font-weight: 700; color: var(--orange-dark); }
+
+    /* ── MCP chain ── */
+    .mcp-card {
+      margin-left: 46px;
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 1px 6px var(--shadow);
+      animation: fadeUp 0.28s ease forwards;
+      opacity: 0;
+    }
+    .mcp-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--bg);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .mcp-step:last-child { border-bottom: none; }
+    .mcp-icon { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+    .mcp-tag {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 10px;
+      background: var(--bg);
+      color: var(--orange);
+      border: 1px solid rgba(252,128,25,0.25);
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .mcp-step.done  { color: var(--text-primary); }
+    .mcp-step.done  .mcp-icon { color: var(--green); }
+    .mcp-step.done  .mcp-tag  { background: var(--green-light); color: #3A7D2C; border-color: rgba(96,178,70,0.25); }
+    .mcp-step.active { color: var(--orange); }
+    .mcp-step.active .mcp-icon { animation: spin 0.7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Notification card ── */
+    .notif-card {
+      margin-left: 46px;
+      max-width: 400px;
+      background: var(--white);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 2px 14px var(--shadow);
+      animation: fadeUp 0.3s ease forwards;
+      opacity: 0;
+    }
+    .notif-header {
+      background: var(--dark);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .notif-app-icon {
+      width: 28px; height: 28px;
+      background: var(--orange);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .notif-app-name { font-size: 12px; font-weight: 600; color: #fff; }
+    .notif-time     { margin-left: auto; font-size: 11px; color: rgba(255,255,255,0.4); }
+    .notif-body     { padding: 16px; }
+    .notif-title    { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 3px; }
+    .notif-sub      { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+    .notif-chips    { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+    .notif-chip     { font-size: 11px; background: var(--bg); border-radius: 20px; padding: 3px 10px; }
+    .notif-total    { font-size: 22px; font-weight: 700; color: var(--dark); margin-bottom: 14px; }
+    .notif-total span { color: var(--orange); }
+    .notif-actions  { display: flex; gap: 8px; }
+    .btn-confirm {
+      flex: 1;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.14s, transform 0.1s;
+    }
+    .btn-confirm:hover  { background: var(--orange-dark); }
+    .btn-confirm:active { transform: scale(0.98); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.14s, color 0.14s;
+    }
+    .btn-ghost:hover { border-color: var(--text-secondary); color: var(--dark); }
+
+    /* ── Success card ── */
+    .success-card {
+      margin-left: 46px;
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      box-shadow: 0 1px 6px var(--shadow);
+      text-align: center;
+      animation: fadeUp 0.35s ease forwards;
+      opacity: 0;
+    }
+    .success-icon  { font-size: 46px; margin-bottom: 14px; }
+    .success-title { font-size: 19px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+    .success-oid   {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      background: var(--bg);
+      color: var(--text-secondary);
+      padding: 5px 14px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 18px;
+    }
+    .success-rows  { text-align: left; border-top: 1px solid var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+    .s-row         { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-primary); }
+    .s-total       { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--dark); border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; }
+    .s-footer      { font-size: 11px; color: var(--text-secondary); margin-top: 12px; }
+
+    /* ── Fixed action bar ── */
+    .action-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.07);
+      z-index: 100;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+    }
+    .action-bar.visible { transform: translateY(0); }
+    .btn-primary {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.14s, transform 0.1s;
+    }
+    .btn-primary:hover  { background: var(--orange-dark); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.14s, color 0.14s;
+    }
+    .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 88px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: var(--dark);
+      color: #fff;
+      padding: 9px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 200;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Scrollbar ── */
+    .chat::-webkit-scrollbar { width: 5px; }
+    .chat::-webkit-scrollbar-track { background: transparent; }
+    .chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .model-head, .model-row { grid-template-columns: 1.6fr 0.9fr 0.7fr; }
+      .col-cadence, .col-orders, .h-cadence, .h-orders { display: none; }
+      .cand-price small { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="logo-box">🛒</div>
+    <div class="header-info">
+      <h1>Smart Replenishment Agent</h1>
+      <p>Swiggy Instamart · Builders Club Demo · 2026-05-06</p>
+    </div>
+    <div class="ai-badge">AI Active</div>
+  </header>
+
+  <div class="chat">
+    <div class="chat-inner" id="chat"></div>
+  </div>
+
+  <div class="action-bar" id="action-bar">
+    <button class="btn-secondary" onclick="handleSkip()">Skip this week</button>
+    <button class="btn-primary" id="btn-build" onclick="handleBuildCart()">Looks good — Build Cart →</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+// ── Data ────────────────────────────────────────────────────────────────────
+
+const USER = 'Anish';
+
+const ALL_ITEMS = [
+  { id:'SKU_001', name:'Amul Toned Milk',       emoji:'🥛', cat:'Dairy',        avgDays:5,    orders:24, lastDate:'2026-05-01', dueDate:'2026-05-06', qty:2, price:25,  conf:'high',   status:'due'     },
+  { id:'SKU_002', name:'Modern Wheat Bread',    emoji:'🍞', cat:'Bakery',       avgDays:7,    orders:17, lastDate:'2026-04-29', dueDate:'2026-05-06', qty:1, price:35,  conf:'high',   status:'due'     },
+  { id:'SKU_003', name:'Amul Butter',           emoji:'🧈', cat:'Dairy',        avgDays:14.6, orders:8,  lastDate:'2026-04-22', dueDate:'2026-05-06', qty:1, price:55,  conf:'high',   status:'due'     },
+  { id:'SKU_004', name:'Farm Fresh Eggs',       emoji:'🥚', cat:'Eggs',         avgDays:9.9,  orders:12, lastDate:'2026-04-25', dueDate:'2026-05-04', qty:1, price:72,  conf:'high',   status:'overdue' },
+  { id:'SKU_005', name:'Fortune Sunflower Oil', emoji:'🫙', cat:'Oils',         avgDays:34,   orders:4,  lastDate:'2026-04-20', dueDate:'2026-05-24', qty:1, price:148, conf:'high',   status:'ok'      },
+  { id:'SKU_006', name:'Dettol Handwash',       emoji:'🧴', cat:'Personal Care',avgDays:38,   orders:3,  lastDate:'2026-04-01', dueDate:'2026-05-09', qty:1, price:99,  conf:'medium', status:'ok'      },
+  { id:'SKU_007', name:'Parle-G Biscuits',      emoji:'🍪', cat:'Snacks',       avgDays:18.6, orders:6,  lastDate:'2026-04-15', dueDate:'2026-05-03', qty:1, price:55,  conf:'high',   status:'overdue' },
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+
+const state = {
+  phase: 'start',
+  candidates: ALL_ITEMS.filter(i => i.status !== 'ok').map(i => ({ ...i })),
+};
+
+const cartTotal = () => state.candidates.reduce((s, i) => s + i.price * i.qty, 0);
+
+// ── DOM helpers ──────────────────────────────────────────────────────────────
+
+const chat      = document.getElementById('chat');
+const actionBar = document.getElementById('action-bar');
+const toastEl   = document.getElementById('toast');
+
+function scrollBottom() {
+  const c = document.querySelector('.chat');
+  c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
+}
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 2400);
+}
+
+function showActionBar() { actionBar.classList.add('visible'); }
+function hideActionBar() { actionBar.classList.remove('visible'); }
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Append any element to chat
+function appendEl(el, delay = 0) {
+  return new Promise(r => setTimeout(() => {
+    chat.appendChild(el);
+    scrollBottom();
+    r();
+  }, delay));
+}
+
+// Typing indicator — returns a remove function
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `<div class="avatar">🤖</div><div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  chat.appendChild(row);
+  scrollBottom();
+  return () => row.remove();
+}
+
+// Animated agent message
+async function agentSay(html, typingMs = 900) {
+  const remove = showTyping();
+  await wait(typingMs);
+  remove();
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `<div class="avatar">🤖</div><div class="bubble">${html}</div>`;
+  await appendEl(row);
+}
+
+// ── Consumption model table ──────────────────────────────────────────────────
+
+function buildModelTable() {
+  const statusLabel = { due: 'Due Today', overdue: 'Overdue', ok: 'On Track' };
+  const statusBadge = { due: 'badge-due', overdue: 'badge-overdue', ok: 'badge-ok' };
+  const confBadge   = { high: 'badge-high', medium: 'badge-medium', low: 'badge-low' };
+
+  const rows = ALL_ITEMS.map(i => `
+    <div class="model-row">
+      <div class="item-cell">
+        <span class="item-emo">${i.emoji}</span>
+        <div><div class="item-name">${i.name}</div><div class="item-cat">${i.cat}</div></div>
+      </div>
+      <div class="muted-cell col-cadence">every ${i.avgDays}d</div>
+      <div class="muted-cell col-orders">${i.orders} orders</div>
+      <div class="muted-cell">${i.lastDate}</div>
+      <div><span class="badge ${statusBadge[i.status]}">${statusLabel[i.status]}</span></div>
+      <div><span class="badge ${confBadge[i.conf]}">${i.conf}</span></div>
+    </div>`).join('');
+
+  const card = document.createElement('div');
+  card.className = 'model-card';
+  card.innerHTML = `
+    <div class="model-head">
+      <div>Product</div>
+      <div class="h-cadence">Cadence</div>
+      <div class="h-orders">History</div>
+      <div>Last Ordered</div>
+      <div>Status</div>
+      <div>Conf.</div>
+    </div>${rows}`;
+  return card;
+}
+
+// ── Restock candidate cards ──────────────────────────────────────────────────
+
+function buildCandidatesWrap() {
+  const wrap = document.createElement('div');
+  wrap.className = 'candidates-wrap';
+  wrap.id = 'cands-wrap';
+  renderCandidates(wrap);
+  return wrap;
+}
+
+function renderCandidates(wrap) {
+  wrap.innerHTML = '';
+  if (state.candidates.length === 0) {
+    wrap.innerHTML = '<div class="empty-cands">All items removed. Add something back or skip this week.</div>';
+    updateTotalBar();
+    return;
+  }
+  state.candidates.forEach(i => {
+    const card = document.createElement('div');
+    card.className = `cand-card${i.status === 'overdue' ? ' overdue' : ''}`;
+    card.id = `cand-${i.id}`;
+    card.innerHTML = `
+      <div class="cand-emo">${i.emoji}</div>
+      <div class="cand-info">
+        <div class="cand-name">${i.name}</div>
+        <div class="cand-meta">qty ${i.qty} · ${i.status === 'overdue' ? '⚠ Overdue' : 'Due today'} · every ${i.avgDays} days</div>
+      </div>
+      <div class="cand-price">₹${i.price * i.qty}<small>× ${i.qty} unit${i.qty > 1 ? 's' : ''}</small></div>
+      <button class="remove-btn" title="Remove from cart" onclick="removeItem('${i.id}')">✕</button>`;
+    wrap.appendChild(card);
+  });
+}
+
+function removeItem(id) {
+  const card = document.getElementById(`cand-${id}`);
+  const item = state.candidates.find(i => i.id === id);
+  if (!card || !item) return;
+
+  card.classList.add('removed');
+  setTimeout(() => {
+    state.candidates = state.candidates.filter(i => i.id !== id);
+    const wrap = document.getElementById('cands-wrap');
+    if (wrap) renderCandidates(wrap);
+    updateTotalBar();
+    showToast(`${item.emoji} ${item.name} removed from cart`);
+  }, 300);
+}
+
+function buildTotalBar() {
+  const bar = document.createElement('div');
+  bar.className = 'total-bar';
+  bar.id = 'total-bar';
+  bar.innerHTML = `<span class="tl-label">Estimated cart total</span><span class="tl-val" id="total-val">₹${cartTotal()}</span>`;
+  return bar;
+}
+
+function updateTotalBar() {
+  const el = document.getElementById('total-val');
+  if (el) el.textContent = `₹${cartTotal()}`;
+}
+
+// ── MCP tool chain ───────────────────────────────────────────────────────────
+
+function getMCPSteps() {
+  return [
+    { tool: 'get_addresses',   label: 'Resolving your Home delivery address' },
+    ...state.candidates.map(c => ({
+      tool: 'search_products',
+      label: `Checking ${c.name} — In stock ₹${c.price}`,
+    })),
+    { tool: 'update_cart', label: 'Pre-building your replenishment cart' },
+    { tool: 'get_cart',    label: 'Reading back cart total for confirmation' },
+  ];
+}
+
+function buildMCPCard(steps) {
+  const card = document.createElement('div');
+  card.className = 'mcp-card';
+  card.id = 'mcp-card';
+  card.innerHTML = steps.map((s, i) => `
+    <div class="mcp-step" id="ms-${i}">
+      <span class="mcp-icon">⏳</span>
+      <span class="mcp-tag">${s.tool}</span>
+      <span>${s.label}</span>
+    </div>`).join('');
+  return card;
+}
+
+async function animateMCPSteps(steps) {
+  for (let i = 0; i < steps.length; i++) {
+    const el = document.getElementById(`ms-${i}`);
+    if (!el) continue;
+    el.classList.add('active');
+    el.querySelector('.mcp-icon').textContent = '↻';
+    scrollBottom();
+    await wait(420);
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.mcp-icon').textContent = '✓';
+  }
+}
+
+// ── Notification card ────────────────────────────────────────────────────────
+
+function buildNotifCard() {
+  const chips = state.candidates.map(i => `<span class="notif-chip">${i.emoji} ${i.name}</span>`).join('');
+  const card = document.createElement('div');
+  card.className = 'notif-card';
+  card.innerHTML = `
+    <div class="notif-header">
+      <div class="notif-app-icon">🛒</div>
+      <div class="notif-app-name">Swiggy Instamart</div>
+      <div class="notif-time">now</div>
+    </div>
+    <div class="notif-body">
+      <div class="notif-title">Your weekly restock is ready! 🎯</div>
+      <div class="notif-sub">${state.candidates.length} items · Delivered to Home · Bengaluru</div>
+      <div class="notif-chips">${chips}</div>
+      <div class="notif-total">Total <span>₹${cartTotal()}</span></div>
+      <div class="notif-actions">
+        <button class="btn-confirm" onclick="handleConfirm()">✓ Confirm &amp; Order</button>
+        <button class="btn-ghost" onclick="showToast('Edit cart on Swiggy app')">Edit</button>
+        <button class="btn-ghost" onclick="handleSkip()">Skip</button>
+      </div>
+    </div>`;
+  return card;
+}
+
+// ── Success card ─────────────────────────────────────────────────────────────
+
+function buildSuccessCard(orderId) {
+  const rows = state.candidates.map(i =>
+    `<div class="s-row"><span>${i.emoji} ${i.name} × ${i.qty}</span><span>₹${i.price * i.qty}</span></div>`
+  ).join('');
+  const card = document.createElement('div');
+  card.className = 'success-card';
+  card.innerHTML = `
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Order Placed Successfully!</div>
+    <div class="success-oid">${orderId}</div>
+    <div class="success-rows">
+      ${rows}
+      <div class="s-total"><span>Total</span><span>₹${cartTotal()}</span></div>
+      <div class="s-footer">Cash on Delivery · Home · 42, Koramangala, Bengaluru</div>
+    </div>`;
+  return card;
+}
+
+// ── Section label helper ─────────────────────────────────────────────────────
+
+function sectionLabel(text) {
+  const el = document.createElement('div');
+  el.className = 'section-label';
+  el.textContent = text;
+  return el;
+}
+
+// ── Flow handlers ────────────────────────────────────────────────────────────
+
+async function handleBuildCart() {
+  if (state.candidates.length === 0) {
+    showToast('Add at least one item to continue');
+    return;
+  }
+  hideActionBar();
+  state.phase = 'mcp';
+
+  await agentSay(`Running the Swiggy MCP tool chain — checking availability and building your cart...`, 700);
+
+  const steps  = getMCPSteps();
+  const mcpCard = buildMCPCard(steps);
+  await appendEl(mcpCard, 200);
+  await animateMCPSteps(steps);
+
+  await agentSay(`All ${state.candidates.length} items are in stock. Your cart is pre-built. Here's your notification preview — tap <strong>Confirm &amp; Order</strong> when you're ready:`, 800);
+
+  state.phase = 'notification';
+  await appendEl(buildNotifCard(), 200);
+}
+
+async function handleConfirm() {
+  hideActionBar();
+  state.phase = 'checkout';
+
+  const orderId = `ORD_${Date.now()}`;
+
+  await agentSay(`Placing your order... 💳`, 900);
+  await appendEl(buildSuccessCard(orderId), 300);
+  await agentSay(`Your groceries are on their way, ${USER}! 🚀<br><em>I'll check again tomorrow at 08:00 and notify you if anything's due. The model gets smarter with every cycle — your skips and edits are already being tracked.</em>`, 1000);
+
+  state.phase = 'done';
+}
+
+function handleSkip() {
+  hideActionBar();
+  agentSay(`Got it! I'll remind you tomorrow. Your restock preferences are saved. 👍`, 600);
+  showToast('Restock skipped for today');
+  state.phase = 'done';
+}
+
+// ── Main conversation flow ───────────────────────────────────────────────────
+
+async function startFlow() {
+  // 1 — Greeting
+  await agentSay(
+    `Hey ${USER}! 👋 I've been tracking your Instamart orders for the past <strong>4 months</strong> across <strong>7 products</strong>. Here's the full picture of your grocery consumption patterns:`,
+    900
+  );
+
+  // 2 — Consumption model
+  await appendEl(sectionLabel('Consumption Model · All 7 tracked items'), 300);
+  await appendEl(buildModelTable(), 150);
+
+  // 3 — Introduce candidates
+  const dueCount = state.candidates.length;
+  await agentSay(
+    `Based on today's date, <strong>${dueCount} items</strong> are due or overdue for restock. I've built you a suggested cart below.<br><em>Hit ✕ on anything you still have at home, then tap "Build Cart" when you're ready.</em>`,
+    1400
+  );
+
+  // 4 — Candidate cards
+  await appendEl(sectionLabel(`Restock Candidates · ${dueCount} items · Tap ✕ to remove`), 300);
+  await appendEl(buildCandidatesWrap(), 150);
+  await appendEl(buildTotalBar(), 150);
+
+  state.phase = 'candidates';
+  await wait(400);
+  showActionBar();
+}
+
+// Kick off
+window.addEventListener('load', () => setTimeout(startFlow, 400));
+</script>
+</body>
+</html>

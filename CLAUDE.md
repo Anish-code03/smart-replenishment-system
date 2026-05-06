@@ -19,10 +19,13 @@ Smart-Replenishment-System/
 ├── CLAUDE.md                   ← this file
 ├── MEMORY.md                   ← project memory (≤200 lines)
 ├── README.md                   ← plain-English project overview
+├── design.md                   ← Swiggy design system (colours, typography, components)
 ├── replenishment_plan.md       ← full build plan (from the HTML doc)
 ├── replenishment_plan.html     ← original design document
 ├── package.json
 ├── tsconfig.json
+├── ui/
+│   └── index.html              ← conversational web UI (open in browser, no build step)
 └── src/
     ├── types.ts                ← all shared TypeScript interfaces
     ├── data/
@@ -32,19 +35,32 @@ Smart-Replenishment-System/
         ├── consumptionModel.ts ← frequency inference engine
         ├── mcpClient.ts        ← mock MCP client (drop-in for real MCP)
         ├── cartBuilder.ts      ← cart pre-build + checkout
-        └── demo.ts             ← end-to-end demo runner (entry point)
+        └── demo.ts             ← terminal demo runner (npm run demo)
 ```
 
 ---
 
 ## How to run
 
+**Terminal demo (5-phase sequential output):**
 ```bash
 npm install
 npm run demo
 ```
 
-Runs the full 5-phase simulation in the terminal using sample data. No API keys or network access needed.
+**Conversational web UI (interactive, Swiggy-branded):**
+```bash
+open ui/index.html
+# or just double-click ui/index.html in Finder
+```
+
+The web UI runs entirely in-browser with no build step. It shows:
+1. Greeting + full consumption model table for all 7 tracked items
+2. Restock candidates with ✕ remove buttons per item (editable cart)
+3. Live cart total that updates as you remove items
+4. MCP tool chain animation (step-by-step with tool names)
+5. Push notification card preview
+6. Confirm & Order → success receipt
 
 ---
 
@@ -150,12 +166,22 @@ Exports:
 
 ---
 
+## UI conventions (see design.md for full spec)
+
+- **Design tokens:** All colours, spacing, and radius values live in CSS custom properties at the top of `ui/index.html`. Never hardcode hex values inline.
+- **Conversation engine:** Agent messages always show a typing indicator (3-dot bounce) before appearing. Use the `agentSay(html, typingMs)` helper — never append a bubble directly.
+- **Candidate removal:** Clicking ✕ triggers a CSS `removed` class (translateX + opacity), waits 300ms, then splices from `state.candidates` and re-renders. Never skip the animation.
+- **MCP steps:** Always generated dynamically from `getMCPSteps()` so they reflect whichever candidates remain after user edits. Never hardcode step count.
+- **Cart total:** Always computed live from `state.candidates` via `cartTotal()`. Never store as a separate variable.
+
 ## Tech stack
 
 | Layer | Choice |
 |---|---|
-| Language | TypeScript 5.x |
+| Language | TypeScript 5.x (backend/CLI) + Vanilla JS (UI) |
 | Runtime | Node.js via `tsx` (zero compile step) |
+| UI | Single-file HTML — no framework, no build step, open directly in browser |
+| Design | Swiggy brand colours (see design.md), Inter font via Google Fonts |
 | Scheduler | Vercel Cron (daily 08:00 IST) |
 | Database | Supabase (product_cadences, user_prefs, restock_events) |
 | Push | FCM / Expo Push Notifications |
