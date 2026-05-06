@@ -21,6 +21,14 @@ conversational web UI where the user can review and edit their restock cart befo
 - MockMCPClient simulates all 7 MCP tools locally (no real API)
 - 74 orders across 7 SKUs crafted to make 5 items due on 2026-05-06
 
+### WhatsApp integration (Twilio)
+- `src/lib/whatsappClient.ts` — `sendRestockPrompt`, `sendRestockLink`, `sendSkipConfirmation`
+- `api/whatsapp.ts` — Vercel serverless webhook; validates Twilio signature; YES → cart link, NO → skip
+- `api/cron/daily-restock.ts` — Vercel Cron entry; fires at 02:30 UTC (08:00 IST)
+- `vercel.json` — cron schedule configured
+- `.env.example` — documents all 5 required env vars
+- Flow: Cron sends "Ready for restock? YES/NO" → user replies YES → receives `APP_BASE_URL/ui/index.html` link
+
 ### Web UI (`ui/index.html` — open in browser)
 - Conversational agent interface with Swiggy branding (design.md colours)
 - Phase 1: Greeting + full consumption model table (all 7 items, status-coded)
@@ -115,8 +123,8 @@ Full spec in design.md.
 1. Swiggy Builders Club MCP access (OAuth 2.1 + PKCE) — apply at `/access` with demo video
 2. Replace MockMCPClient internals with real JSON-RPC to `https://mcp.swiggy.com/im` — parameter names already match
 3. Resolve `productId → product name` for `search_products` (real API is text search, not ID lookup)
-4. Vercel Cron (`api/cron/daily-restock.ts`) at 08:00 IST daily
-5. FCM / Expo Push for real phone notifications
+4. Deploy to Vercel + set env vars → WhatsApp cron goes live automatically
+5. Twilio sandbox → production: get a WhatsApp-approved sender number + message templates
 6. Supabase: `product_cadences`, `user_prefs`, `restock_events` tables
 7. Feedback loop: every ✕ remove or skip → update model weights per SKU
 

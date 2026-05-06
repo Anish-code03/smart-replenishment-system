@@ -22,8 +22,14 @@ Smart-Replenishment-System/
 ├── design.md                   ← Swiggy design system (colours, typography, components)
 ├── replenishment_plan.md       ← full build plan (from the HTML doc)
 ├── replenishment_plan.html     ← original design document
+├── vercel.json                 ← Vercel cron schedule (08:00 IST daily)
+├── .env.example                ← required environment variables
 ├── package.json
 ├── tsconfig.json
+├── api/
+│   ├── whatsapp.ts             ← Vercel serverless webhook (Twilio reply handler)
+│   └── cron/
+│       └── daily-restock.ts   ← Vercel Cron handler — sends daily WhatsApp prompt
 ├── ui/
 │   └── index.html              ← conversational web UI (open in browser, no build step)
 └── src/
@@ -35,6 +41,7 @@ Smart-Replenishment-System/
         ├── consumptionModel.ts ← frequency inference engine
         ├── mcpClient.ts        ← mock MCP client (drop-in for real MCP)
         ├── cartBuilder.ts      ← cart pre-build + checkout
+        ├── whatsappClient.ts   ← Twilio WhatsApp send helpers
         └── demo.ts             ← terminal demo runner (npm run demo)
 ```
 
@@ -69,21 +76,29 @@ The web UI runs entirely in-browser with no build step. It shows:
 ```
 [Vercel Cron 08:00 IST]
         ↓
+[api/cron/daily-restock.ts]
+        ↓
+[WhatsApp message via Twilio]
+  "Are you ready for your daily restock?"
+  Reply YES → cart link    Reply NO → skip
+        ↓ (user replies YES)
+[api/whatsapp.ts webhook]
+        ↓
+[Sends ui/index.html link to user]
+        ↓ (user taps link)
+[Conversational Web UI — ui/index.html]
+        ↓
 [Consumption Model Engine]   ← Supabase: product_cadences table
         ↓                       avg_days_between, last_ordered, predicted_restock_date
 [MCP Tool Chain]
    get_orders          → seed / refresh consumption model
-   your_go_to_items    → cold-start for new users
+   your_go_to_items    → cold-start for new users (requires addressId)
    search_products     → validate availability + current price
    get_addresses       → resolve Home delivery address
-   update_cart         → pre-build cart with validated items
+   update_cart         → pre-build cart (selectedAddressId + spinId items)
    get_cart            → read back total for notification
         ↓
-[Push Notification]          ← FCM / Expo Push
-  "Your restock is ready — 5 items · ₹267"
-  [ Confirm & Order ]  [ Edit Cart ]  [ Skip ]
-        ↓
-[checkout]                   ← COD · ≤ ₹1000 cap
+[checkout]                   ← COD · ≤ ₹1000 cap · addressId required
         ↓
 [Feedback Loop]              ← every skip/edit updates model weights
 ```
@@ -192,16 +207,42 @@ The full API spec is at `llms-full.txt` (gitignored; regenerate from `https://mc
 - **MCP steps:** Always generated dynamically from `getMCPSteps()` so they reflect whichever candidates remain after user edits. Never hardcode step count.
 - **Cart total:** Always computed live from `state.candidates` via `cartTotal()`. Never store as a separate variable.
 
+## WhatsApp integration
+
+**Flow:** Vercel Cron → `api/cron/daily-restock.ts` sends a WhatsApp message daily at 08:00 IST. User replies YES or NO. `api/whatsapp.ts` receives the Twilio webhook and responds accordingly.
+
+**Key files:**
+- `src/lib/whatsappClient.ts` — three helpers: `sendRestockPrompt`, `sendRestockLink`, `sendSkipConfirmation`
+- `api/whatsapp.ts` — Twilio webhook; validates signature, routes YES → link, NO → skip
+- `api/cron/daily-restock.ts` — Vercel Cron entry point
+- `vercel.json` — cron schedule: `30 2 * * *` (02:30 UTC = 08:00 IST)
+
+**Required env vars** (see `.env.example`):
+
+| Variable | Description |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | From Twilio Console |
+| `TWILIO_AUTH_TOKEN` | From Twilio Console |
+| `TWILIO_WHATSAPP_FROM` | Sandbox: `whatsapp:+14155238886` |
+| `USER_WHATSAPP_NUMBER` | Recipient number with country code |
+| `APP_BASE_URL` | Deployed app URL (used to build the cart link) |
+
+**Sandbox setup:** Join the Twilio WhatsApp sandbox by sending `join <sandbox-keyword>` to the sandbox number. Set webhook URL in Twilio Console → Messaging → Sandbox Settings → `When a message comes in`: `https://your-app.vercel.app/api/whatsapp`.
+
+**Twilio signature validation** is enforced in `api/whatsapp.ts` — requests without a valid `x-twilio-signature` header return 403.
+
+---
+
 ## Tech stack
 
 | Layer | Choice |
 |---|---|
-| Language | TypeScript 5.x (backend/CLI) + Vanilla JS (UI) |
-| Runtime | Node.js via `tsx` (zero compile step) |
+| Language | TypeScript 5.x (backend/CLI + Vercel functions) + Vanilla JS (UI) |
+| Runtime | Node.js via `tsx` (demo) + Vercel serverless (API) |
 | UI | Single-file HTML — no framework, no build step, open directly in browser |
 | Design | Swiggy brand colours (see design.md), Inter font via Google Fonts |
 | Scheduler | Vercel Cron (daily 08:00 IST) |
+| Notifications | Twilio WhatsApp API (YES/NO prompt → cart link) |
 | Database | Supabase (product_cadences, user_prefs, restock_events) |
-| Push | FCM / Expo Push Notifications |
 | MCP transport | JSON-RPC 2.0 over HTTPS |
 | Auth | OAuth 2.1 + PKCE |
