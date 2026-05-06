@@ -13,7 +13,7 @@ conversational web UI where the user can review and edit their restock cart befo
 
 ---
 
-## Current state (as of 2026-05-06)
+## Current state (as of 2026-05-07)
 
 ### Terminal demo (`npm run demo`)
 - Fully functional, 5-phase ANSI terminal output
@@ -30,6 +30,14 @@ conversational web UI where the user can review and edit their restock cart befo
 - Phase 4: Swiggy-styled push notification card with Confirm / Edit / Skip
 - Phase 5: Success receipt with order ID and itemised total
 - No build step — just double-click the file
+
+### Mock API — now matches real Swiggy Instamart parameter names
+- `CartItem.spinId` (was `itemId`) — variant-level identifier
+- `update_cart` takes `selectedAddressId` (not `addressId`)
+- `checkout` takes `addressId` (required) + optional `paymentMethod`
+- `your_go_to_items` takes `addressId` (required)
+- `confirmRestockOrder(client, addressId)` — signature updated; caller passes `cart.addressId`
+- `llms-full.txt` added to `.gitignore` (regenerate from `https://mcp.swiggy.com/builders/llms-full.txt`)
 
 ### GitHub
 - Public repo: https://github.com/Anish-code03/smart-replenishment-system
@@ -104,12 +112,13 @@ Full spec in design.md.
 
 ## What's next (to make it real)
 
-1. Swiggy Builders Club MCP access (OAuth 2.1 + PKCE)
-2. Replace MockMCPClient internals with real JSON-RPC calls
-3. Vercel Cron (`api/cron/daily-restock.ts`) at 08:00 IST daily
-4. FCM / Expo Push for real phone notifications
-5. Supabase: `product_cadences`, `user_prefs`, `restock_events` tables
-6. Feedback loop: every ✕ remove or skip → update model weights per SKU
+1. Swiggy Builders Club MCP access (OAuth 2.1 + PKCE) — apply at `/access` with demo video
+2. Replace MockMCPClient internals with real JSON-RPC to `https://mcp.swiggy.com/im` — parameter names already match
+3. Resolve `productId → product name` for `search_products` (real API is text search, not ID lookup)
+4. Vercel Cron (`api/cron/daily-restock.ts`) at 08:00 IST daily
+5. FCM / Expo Push for real phone notifications
+6. Supabase: `product_cadences`, `user_prefs`, `restock_events` tables
+7. Feedback loop: every ✕ remove or skip → update model weights per SKU
 
 ---
 

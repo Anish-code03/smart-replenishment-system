@@ -30,7 +30,7 @@ export async function buildReplenishmentCart(
     const product = result.data.products[0];
     if (product?.inStock) {
       validItems.push({
-        itemId: product.id,
+        spinId: product.id,
         productName: product.name,
         quantity: c.lastQty,
         unitPrice: product.price,
@@ -43,8 +43,8 @@ export async function buildReplenishmentCart(
 
   // Step 3 — Pre-build cart
   await client.callTool('update_cart', {
-    addressId: home.id,
-    items: validItems.map(i => ({ itemId: i.itemId, quantity: i.quantity })),
+    selectedAddressId: home.id,
+    items: validItems.map(i => ({ spinId: i.spinId, quantity: i.quantity })),
   });
 
   // Step 4 — Read back cart total for confirmation display
@@ -59,9 +59,10 @@ export async function buildReplenishmentCart(
 
 // Called after the user taps "Confirm & Order"
 export async function confirmRestockOrder(
-  client: MockMCPClient
+  client: MockMCPClient,
+  addressId: string
 ): Promise<{ orderId: string; total: number }> {
-  const result = await client.callTool('checkout', { paymentMethod: 'COD' });
+  const result = await client.callTool('checkout', { addressId, paymentMethod: 'COD' });
   // ⚠ checkout is NOT idempotent — on 5xx, call get_orders before retrying
   return result.data;
 }

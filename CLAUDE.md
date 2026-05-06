@@ -122,10 +122,27 @@ Confidence tiers: `>= 4 orders → high`, `2–3 → medium`, `1 → low`.
 ### `src/lib/cartBuilder.ts`
 Exports:
 - `buildReplenishmentCart(client, candidates)` — resolves address, validates each candidate via `search_products`, calls `update_cart`, reads back via `get_cart`, checks ₹1000 cap.
-- `confirmRestockOrder(client)` — calls `checkout` with `paymentMethod: "COD"`. **Not idempotent** — on 5xx, check `get_orders` for a recent order before retrying.
+- `confirmRestockOrder(client, addressId)` — calls `checkout` with `addressId` and `paymentMethod: "COD"`. **Not idempotent** — on 5xx, check `get_orders` for a recent order before retrying.
 
 ### `src/data/sampleOrders.ts`
 74 orders crafted so that on 2026-05-06 exactly 5 items are due: Milk (every 5d), Bread (7d), Butter (14d), Eggs (10d), Parle-G (21d). Oil (30d) and Dettol (45d) are not due. Dettol's product is also set `inStock: false` in the catalog to demo the skip path.
+
+---
+
+## Real MCP parameter reference
+
+The `callTool()` overload signatures already match the real Swiggy Instamart API (verified against `llms-full.txt`):
+
+| Tool | Key parameter | Value |
+|---|---|---|
+| `your_go_to_items` | `addressId` | required |
+| `search_products` | `addressId` + `query` | text search, not productId |
+| `update_cart` | `selectedAddressId` | (not `addressId`) |
+| `update_cart` items | `spinId` | variant-level ID (not productId) |
+| `checkout` | `addressId` | required; `paymentMethod` optional |
+| `get_orders` | — | returns last 15 days only (mock returns 74 orders) |
+
+The full API spec is at `llms-full.txt` (gitignored; regenerate from `https://mcp.swiggy.com/builders/llms-full.txt`).
 
 ---
 
@@ -135,14 +152,15 @@ Exports:
 2. Implement OAuth 2.1 + PKCE flow to obtain a session token (5-day TTL)
 3. In `mcpClient.ts`, replace `MockMCPClient.callTool()` internals with:
    ```typescript
-   const response = await fetch('https://mcp.swiggy.com/instamart', {
+   const response = await fetch('https://mcp.swiggy.com/im', {
      method: 'POST',
      headers: { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
      body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/call', params: { name, arguments: args } }),
    });
    ```
 4. Handle token expiry: catch 401 / JSON-RPC -32001, mark user as `needs_reauth`, notify via push.
-5. `consumption-model.ts`, `cart-builder.ts`, and `demo.ts` need zero changes.
+5. `search_products` queries must be product name strings — resolve `productId → name` before calling.
+6. `consumptionModel.ts` needs zero changes. `cartBuilder.ts` and `demo.ts` need zero changes.
 
 ---
 

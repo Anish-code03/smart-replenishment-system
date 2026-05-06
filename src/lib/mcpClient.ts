@@ -18,7 +18,7 @@ export class MockMCPClient {
   private addressId = '';
 
   async callTool(name: 'get_orders'): Promise<MCPToolResult<{ orders: Order[] }>>;
-  async callTool(name: 'your_go_to_items'): Promise<MCPToolResult<{ products: Product[] }>>;
+  async callTool(name: 'your_go_to_items', args: { addressId: string }): Promise<MCPToolResult<{ products: Product[] }>>;
   async callTool(name: 'get_addresses'): Promise<MCPToolResult<{ addresses: Address[] }>>;
   async callTool(
     name: 'search_products',
@@ -26,12 +26,12 @@ export class MockMCPClient {
   ): Promise<MCPToolResult<{ products: Product[] }>>;
   async callTool(
     name: 'update_cart',
-    args: { addressId: string; items: { itemId: string; quantity: number }[] }
+    args: { selectedAddressId: string; items: { spinId: string; quantity: number }[] }
   ): Promise<MCPToolResult<{ success: boolean }>>;
   async callTool(name: 'get_cart'): Promise<MCPToolResult<{ cart: Cart }>>;
   async callTool(
     name: 'checkout',
-    args: { paymentMethod: string }
+    args: { addressId: string; paymentMethod?: string }
   ): Promise<MCPToolResult<{ orderId: string; total: number }>>;
 
   async callTool(name: string, args?: Record<string, unknown>): Promise<MCPToolResult<unknown>> {
@@ -73,17 +73,17 @@ export class MockMCPClient {
       }
 
       case 'update_cart': {
-        const { addressId, items } = args as {
-          addressId: string;
-          items: { itemId: string; quantity: number }[];
+        const { selectedAddressId, items } = args as {
+          selectedAddressId: string;
+          items: { spinId: string; quantity: number }[];
         };
-        this.addressId = addressId;
+        this.addressId = selectedAddressId;
         this.cart = items
-          .map(({ itemId, quantity }) => {
-            const p = PRODUCTS[itemId];
+          .map(({ spinId, quantity }) => {
+            const p = PRODUCTS[spinId];
             if (!p) return null;
             return {
-              itemId,
+              spinId,
               productName: p.name,
               quantity,
               unitPrice: p.price,

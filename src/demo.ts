@@ -201,7 +201,7 @@ async function main() {
   step('💳', 'Placing order via COD', 'checkout');
   await sleep(300);
 
-  const { orderId, total } = await confirmRestockOrder(client);
+  const { orderId, total } = await confirmRestockOrder(client, cart.addressId);
 
   // ── Summary ───────────────────────────────────────────────────────────────
   console.log('\n' + '═'.repeat(72));

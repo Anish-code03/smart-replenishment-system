@@ -45,7 +45,7 @@ export interface ProductCadence {
 }
 
 export interface CartItem {
-  itemId: string;
+  spinId: string;
   productName: string;
   quantity: number;
   unitPrice: number;
