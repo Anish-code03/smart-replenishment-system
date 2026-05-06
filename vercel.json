@@ -1,4 +1,6 @@
 {
+  "outputDirectory": "ui",
+  "buildCommand": "",
   "crons": [
     {
       "path": "/api/cron/daily-restock",

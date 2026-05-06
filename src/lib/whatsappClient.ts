@@ -28,7 +28,7 @@ export async function sendRestockLink(to: string): Promise<void> {
     to: wa(to),
     body:
       `Great! Here's your restock cart 🛒\n\n` +
-      `${APP_URL}/ui/index.html\n\n` +
+      `${APP_URL}/\n\n` +
       `Tap to review your items and confirm the order.`,
   });
 }
